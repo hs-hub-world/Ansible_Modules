@@ -48,9 +48,9 @@ function UnlockConfigSection
 
 #AnonymousAuth
 #######################
-if($(Get-WebConfigurationProperty -Filter /system.webServer/security/authentication/anonymousAuthentication -Name Enabled -PSPath "MACHINE/WEBROOT/APPHOST/$($Sitename)").value -ne $AnonymouseAuth)
+$section ="/system.webServer/security/authentication/anonymousAuthentication"
+if($(Get-WebConfigurationProperty -Filter "$section" -Name Enabled -PSPath "MACHINE/WEBROOT/APPHOST/$($Sitename)").value -ne $AnonymouseAuth)
 {
-    $section ="/system.webServer/security/authentication/anonymousAuthentication"
     UnlockConfigSection -Sitename "$Sitename" -section "$section"
     Set-WebConfigurationProperty -Filter "$section" -Name Enabled -Value $AnonymouseAuth -PSPath "MACHINE/WEBROOT/APPHOST/$($Sitename)"
     $msg +="Anonymouse Value Changed"
@@ -60,9 +60,9 @@ if($(Get-WebConfigurationProperty -Filter /system.webServer/security/authenticat
 
 #WinAuth
 #################
-if($(Get-WebConfigurationProperty -Filter /system.webServer/security/authentication/windowsAuthentication -Name enabled -PSPath "MACHINE/WEBROOT/APPHOST/$($Sitename)").value -ne $WinAuth)
+$section ="/system.webServer/security/authentication/windowsAuthentication"
+if($(Get-WebConfigurationProperty -Filter "$section" -Name enabled -PSPath "MACHINE/WEBROOT/APPHOST/$($Sitename)").value -ne $WinAuth)
 {
-    $section ="/system.webServer/security/authentication/windowsAuthentication"
     UnlockConfigSection -Sitename "$Sitename" -section "$section"
     Set-WebConfigurationProperty -Filter "$section" -Name Enabled -Value $WinAuth -PSPath "MACHINE/WEBROOT/APPHOST/$($Sitename)"
     $msg +="WinAuth Value Changed"
@@ -71,15 +71,17 @@ if($(Get-WebConfigurationProperty -Filter /system.webServer/security/authenticat
 
 #WinAuth Providers
 ###############
-$Proviers = (get-WebConfiguration -Filter system.webServer/security/authentication/windowsAuthentication/providers -PSPath IIS:\ -Location "$Sitename").collection |?{$_.value -ne ""}    
+$section ="system.webServer/security/authentication/windowsAuthentication/providers"
+$Proviers = (get-WebConfiguration -Filter "$section" -PSPath "MACHINE/WEBROOT/APPHOST/$($Sitename)").collection |?{$_.value -ne ""}
 if(Compare-Object $Proviers.value $WinAuthProviders)
 {
     $msg +=" WinAuth Providers Changed: Resetting "
-    Remove-WebConfigurationProperty -PSPath IIS:\ -Location "$Sitename" -filter system.webServer/security/authentication/windowsAuthentication/providers -name "."
+    UnlockConfigSection -Sitename "$Sitename" -section "$section"
+    Remove-WebConfigurationProperty -PSPath "MACHINE/WEBROOT/APPHOST/$($Sitename)" -filter "$section" -name "."
     foreach($Provider in $WinAuthProviders)
     {
         $msg +=" Setting Provider: $($Provider) "
-        Add-WebConfiguration -Filter system.webServer/security/authentication/windowsAuthentication/providers -PSPath IIS:\ -Location "$Sitename" -Value "$Provider"
+        Add-WebConfiguration -Filter "$section" -PSPath "MACHINE/WEBROOT/APPHOST/$($Sitename)" -Value "$Provider"
     }
     $configchanged=$true
 }
@@ -87,9 +89,9 @@ if(Compare-Object $Proviers.value $WinAuthProviders)
 
 #BasicAuth
 ###########
-if($(Get-WebConfigurationProperty -Filter /system.webServer/security/authentication/basicAuthentication -Name Enabled -PSPath iis:\  -location "$Sitename").value -ne $BasicAuth)
+$section = "/system.webServer/security/authentication/basicAuthentication"
+if($(Get-WebConfigurationProperty -Filter "$section" -Name Enabled -PSPath "MACHINE/WEBROOT/APPHOST/$($Sitename)").value -ne $BasicAuth)
 {
-    $section = "/system.webServer/security/authentication/basicAuthentication"
     UnlockConfigSection -Sitename "$Sitename" -section "$section"
     Set-WebConfigurationProperty -Filter "$section" -Name Enabled -Value $BasicAuth -PSPath iis:\  -location "$Sitename"
     $msg +="BasicAuth Value Changed"
@@ -99,10 +101,12 @@ if($(Get-WebConfigurationProperty -Filter /system.webServer/security/authenticat
 
 #AspNetImpersonation
 ####################
-if($(Get-WebConfigurationProperty -filter system.web/identity -name impersonate -PSPath IIS: -Location "$Sitename").value -ne $AspNetImpersonation)
+$section ="system.web/identity"
+if($(Get-WebConfigurationProperty -filter "$section" -name impersonate -PSPath "MACHINE/WEBROOT/APPHOST/$($Sitename)").value -ne $AspNetImpersonation)
 {
-    
-    Set-WebConfigurationProperty -filter system.web/identity -name impersonate -value $AspNetImpersonation -PSPath IIS: -Location "$Sitename"
+
+    UnlockConfigSection -Sitename "$Sitename" -section "$section"
+    Set-WebConfigurationProperty -filter "$section" -name impersonate -value $AspNetImpersonation -PSPath "MACHINE/WEBROOT/APPHOST/$($Sitename)"
     $msg +="AspNetImpersonation Value Changed"
     $configchanged=$true
 }
@@ -110,20 +114,23 @@ if($(Get-WebConfigurationProperty -filter system.web/identity -name impersonate 
 #DigestAuth
 #TODO 
 ###########
-if($(Get-WebConfigurationProperty -Filter /system.webServer/security/authentication/digestAuthentication -Name Enabled -PSPath iis:\  -location "$Sitename").value -ne $DigestAuth)
+$section ="/system.webServer/security/authentication/digestAuthentication"
+if($(Get-WebConfigurationProperty -Filter "$section" -Name Enabled -PSPath "MACHINE/WEBROOT/APPHOST/$($Sitename)").value -ne $DigestAuth)
 {
-    Set-WebConfigurationProperty -Filter /system.webServer/security/authentication/digestAuthentication -Name Enabled -Value $DigestAuth -PSPath iis:\  -location "$Sitename"
+    UnlockConfigSection -Sitename "$Sitename" -section "$section"
+    Set-WebConfigurationProperty -Filter "$section" -Name Enabled -Value $DigestAuth -PSPath "MACHINE/WEBROOT/APPHOST/$($Sitename)"
     $msg +="DigestAuth Value Changed"
     $configchanged=$true
 }
 
 #if DigestAuth is enabled ensure Realm value is up to date
 #DigetRealm
-if($(Get-WebConfigurationProperty -Filter /system.webServer/security/authentication/digestAuthentication -Name Enabled -PSPath iis:\  -location "$Sitename").value -eq $true)
+$section ="/system.webServer/security/authentication/digestAuthentication"
+if($(Get-WebConfigurationProperty -Filter "$section" -Name Enabled -PSPath "MACHINE/WEBROOT/APPHOST/$($Sitename)").value -eq $true)
 {
-    if((Get-WebConfigurationProperty -Filter /system.webServer/security/authentication/digestAuthentication -Name * -PSPath iis:\  -location "$Sitename").realm -ne $DigestRealm)
+    if((Get-WebConfigurationProperty -Filter "$section" -Name * -PSPath "MACHINE/WEBROOT/APPHOST/$($Sitename)").realm -ne $DigestRealm)
     {
-        Set-WebConfigurationProperty -Filter /system.webServer/security/authentication/digestAuthentication -Name realm -Value $DigestRealm -PSPath iis:\  -location "$Sitename"
+        Set-WebConfigurationProperty -Filter "$section" -Name realm -Value $DigestRealm -PSPath "MACHINE/WEBROOT/APPHOST/$($Sitename)"
         $msg +="DigetRealm Value Changed"
         $configchanged=$true
     }
