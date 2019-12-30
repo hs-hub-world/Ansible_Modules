@@ -1,10 +1,11 @@
-<#
-    @TCW Ansible Module
-#>
-
 #!powershell
+
+# Copyright: (c) 2019, Harry Saryan  <hs-hub-world@github>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
 #Requires -Module Ansible.ModuleUtils.Legacy
 #
+
 
 $ErrorActionPreference = "Stop"
 $params                 = Parse-Args $args -supports_check_mode $true
